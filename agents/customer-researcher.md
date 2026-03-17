@@ -100,6 +100,7 @@ Expected format:
 - **Framework agreements:** [any active framework contracts relevant to cloud]
 - **NIK findings:** [if applicable]
 - **Typical procurement path:** [direct / tender / UZP threshold]
+- **SOE procurement note:** State-owned enterprises (e.g., KGHM, PKN Orlen, PGNiG, Poczta Polska) often use their own supplier and procurement portals rather than BZP. Always check the company's own portal (e.g., dostawcy.kghm.com) in addition to BZP. Tenders may be published on the company's site only, especially below EU threshold values.
 
 ### Opportunity Assessment
 - **Whitespace:** [where GCP/Workspace is not yet present]

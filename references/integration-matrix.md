@@ -458,6 +458,84 @@ AD → Azure AD → SAML → Cloud Identity/GCP IAM
 
 ---
 
+## 9. OT/Industrial Protocols ↔ GCP
+
+Operational Technology (OT) environments use protocols that predate the internet and were designed for reliability and determinism, not cloud connectivity. This section covers the integration path from each major OT protocol to GCP.
+
+### OPC-UA → Pub/Sub via GDC Edge Gateway
+
+**Integration Type:** Partner / Custom
+**Effort Level:** Medium
+**Tools:**
+- Google Distributed Cloud (GDC) Edge with OPC-UA connector: GDC Edge runs on-premise on the OT network; OPC-UA server (PLC or SCADA) publishes tag data to GDC Edge; Edge gateway normalises and forwards to Pub/Sub.
+- Software AG Cumulocity IoT: Partner platform that bridges OPC-UA to Pub/Sub.
+- Eclipse Milo (open source OPC-UA stack): Build a custom OPC-UA → Pub/Sub bridge on GDC Edge.
+
+**Key Considerations:**
+- OPC-UA is the modern standard for industrial automation (Siemens, Rockwell, Beckhoff, Bosch Rexroth all support it). If the customer has OPC-UA, this is the cleanest integration path.
+- OPC-UA security model: certificates required for authenticated sessions. Work with OT team to issue GDC Edge a valid OPC-UA client certificate.
+- Tag selection: avoid replicating all OPC-UA tags to cloud — work with the process engineer to select relevant process variables. Typical plants have 50,000–500,000 tags; relevant subset is usually 500–5,000.
+- Historian pattern: OPC-UA → GDC Edge → Pub/Sub → Dataflow → BigQuery (time-series historian). Replaces OSIsoft PI System for new deployments.
+
+---
+
+### Modbus → Pub/Sub via Protocol Converter
+
+**Integration Type:** Custom (with partner hardware)
+**Effort Level:** Medium
+**Tools:**
+- Moxa, Advantech, or Kepware protocol converters: Hardware or software gateways that read Modbus TCP/RTU registers and publish to MQTT or HTTP, which GDC Edge then forwards to Pub/Sub.
+- Kepware KEPServerEX: Widely-used OT data connectivity platform; supports 150+ protocols including Modbus, DNP3, IEC 61850; can publish to MQTT for GDC Edge ingestion.
+- Custom Python/Go service on GDC Edge: Use pymodbus library to poll Modbus registers; publish to local Pub/Sub emulator or direct to cloud Pub/Sub.
+
+**Key Considerations:**
+- Modbus TCP (Ethernet) vs Modbus RTU (serial RS-485): TCP is straightforward; RTU requires a serial-to-Ethernet converter before GDC Edge can access it.
+- Modbus is a polling protocol (master polls slave); it does not push data. Design polling frequency carefully — too fast causes PLC overload; too slow misses transient events.
+- No authentication in standard Modbus: the OT network must be firewalled. Never expose Modbus directly to a WAN segment. GDC Edge should be on an isolated OT DMZ network segment.
+- Legacy PLCs: many older Modbus devices have limited register maps and documentation. Budget time for field discovery of register addresses with the OT team.
+
+---
+
+### MQTT → Pub/Sub (Native MQTT Bridge)
+
+**Integration Type:** Native
+**Effort Level:** Low
+**Tools:**
+- Pub/Sub MQTT Bridge: Google Cloud Pub/Sub has a native MQTT bridge endpoint (`mqtt.googleapis.com:8883`). MQTT clients (IoT gateways, edge devices) publish directly to Pub/Sub topics using MQTT protocol without any middleware.
+- Eclipse Mosquitto (broker): Run a local MQTT broker on GDC Edge for devices that cannot reach cloud directly; broker forwards to cloud Pub/Sub.
+
+**Key Considerations:**
+- MQTT is widely used in IIoT gateways (Siemens IoT2040, Raspberry Pi-based sensors, many commercial edge devices). If the customer's gateways already speak MQTT, this is a near-zero-effort integration.
+- Authentication: Pub/Sub MQTT bridge requires JWT tokens for device authentication (not username/password). Provision device credentials via Google Cloud IoT registry patterns or manage manually.
+- QoS levels: Pub/Sub MQTT bridge supports QoS 0 (at most once) and QoS 1 (at least once). QoS 2 (exactly once) is not supported — design downstream processing for idempotency.
+- Topic mapping: MQTT topics (`factory/line1/machine3/temperature`) map to Pub/Sub topics. Define a topic hierarchy and naming convention before deployment.
+- Volume: Pub/Sub handles millions of messages/second globally. MQTT bridge is suitable for high-frequency sensor data without throttling concerns.
+
+---
+
+### Industrial Ethernet → GDC Edge Local Processing
+
+**Integration Type:** Native (GDC Edge)
+**Effort Level:** Medium
+**Tools:**
+- Google Distributed Cloud Edge: Runs on standard x86 servers in the OT environment. Connects to Industrial Ethernet switches (PROFINET, EtherNet/IP, EtherCAT) via standard network interfaces.
+- GDC Edge AI workloads: Run Vertex AI models locally for inference on sensor data without cloud round-trip.
+- Local Pub/Sub emulator on GDC Edge: Buffer and batch messages when WAN connectivity is intermittent (common in underground mines and remote sites).
+
+**Data Flow Options:**
+| Scenario | Flow |
+|---------|------|
+| Continuous cloud connectivity | OT sensors → Industrial Ethernet → GDC Edge → Pub/Sub cloud → BigQuery |
+| Intermittent connectivity (mine, offshore) | OT sensors → Industrial Ethernet → GDC Edge (local buffer + inference) → batch sync to Pub/Sub when connected |
+| Air-gapped OT (safety-critical, no cloud) | OT sensors → Industrial Ethernet → GDC Edge (all processing local, no cloud path) |
+
+**Key Considerations:**
+- Industrial Ethernet protocols (PROFINET, EtherNet/IP) are not standard TCP/IP for application data; they require specific drivers. Use protocol converters (Kepware, Cogent DataHub) to bridge to standard TCP/IP before GDC Edge.
+- GDC Edge hardware qualification: verify server hardware is rated for the operating environment (temperature, dust, vibration in industrial settings). Ruggedised form factors available from Dell, HPE, and Supermicro.
+- Latency budget: safety-critical OT functions must remain on the PLC; GDC Edge is for analytics and optimisation workloads only. Never route safety interlock logic through GDC Edge or cloud.
+
+---
+
 ## Integration Complexity Summary Table
 
 | System | GCP Target | Integration Type | Effort | Key Blocker |
@@ -477,3 +555,7 @@ AD → Azure AD → SAML → Cloud Identity/GCP IAM
 | Sybase ASE → AlloyDB | AlloyDB | Custom | High | T-SQL dialect conversion |
 | Mainframe → GCP (Rehost) | Compute Engine | Partner (Micro Focus) | High | COBOL dependency mapping |
 | Mainframe → GCP (Replatform) | Cloud Run / GKE | Partner (Blu Age) | Very High | Full application portfolio analysis |
+| OPC-UA → Analytics | Pub/Sub + BigQuery | GDC Edge gateway | Medium | OT network access, certificate provisioning |
+| Modbus → Analytics | Pub/Sub + BigQuery | Custom (protocol converter) | Medium | Register map discovery, polling design |
+| MQTT → Pub/Sub | Pub/Sub | Native MQTT bridge | Low | Device credential provisioning |
+| Industrial Ethernet → Analytics | GDC Edge → Pub/Sub | Native (GDC Edge) | Medium | Protocol converter for PROFINET/EtherNet/IP |

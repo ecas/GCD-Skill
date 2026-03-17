@@ -96,16 +96,15 @@ Load reference files progressively. Only load what the current mode and query re
 | Energy, utilities | `references/vertical-energy.md` |
 | Education, edtech | `references/vertical-education.md` |
 | Transport, logistics, supply chain | `references/vertical-transport-logistics.md` |
-| Product portfolio questions | `references/product-taxonomy.md` *(generated)* |
-| Solution architecture | `references/solution-patterns.md` *(generated)* |
-| Competitive positioning | `references/competitive-battlecards.md` *(generated)* |
-| Objection handling | `references/objection-library.md` *(generated)* |
-| Pricing, commercials | `references/pricing-models.md` *(generated)* |
-| Business case, ROI | `references/business-cases.md` *(generated)* |
-| Integration with existing systems | `references/integration-matrix.md` *(generated)* |
-| Architecture diagrams, patterns | `references/architecture-templates.md` *(generated)* |
-
-Files marked *(generated)* may not yet exist. If a file is missing, use embedded knowledge and note the gap.
+| Mining, metals, extractive industries | `references/vertical-mining-metals.md` |
+| Product portfolio questions | `references/product-taxonomy.md` |
+| Solution architecture | `references/solution-patterns.md` |
+| Competitive positioning | `references/competitive-battlecards.md` |
+| Objection handling | `references/objection-library.md` |
+| Pricing, commercials | `references/pricing-models.md` |
+| Business case, ROI | `references/business-cases.md` |
+| Integration with existing systems | `references/integration-matrix.md` |
+| Architecture diagrams, patterns | `references/architecture-templates.md` |
 
 ---
 
@@ -178,7 +177,7 @@ Default output language: **English**.
 Switch to Polish when:
 - User writes in Polish
 - User says "po polsku", "in Polish", "PL"
-- Company is Polish and user has not specified
+- User explicitly requests Polish output
 
 When Polish is active:
 - All generated content (pitch, demo, emails) in Polish

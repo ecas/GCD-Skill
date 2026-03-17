@@ -32,7 +32,7 @@ Map meeting type and primary persona to template:
 |----------------------|----------|
 | CxO intro, first meeting, < 30 min | **A: Quick Intro** (8 slides) |
 | Executive alignment, strategic discussion | **B: Executive Overview** (12 slides) |
-| CTO / IT Director, architecture review | **C: Technical Deep-Dive** (15 slides) |
+| CTO / IT Director, architecture review | **C: Technical Deep-Dive** (15-20 slides) |
 | CFO, Procurement, ROI focus | **D: ROI & Business Case** (10 slides) |
 | Competitive displacement, incumbent at risk | **E: Competition Win** (12 slides) |
 
@@ -122,7 +122,7 @@ For each slide, produce:
 
 ---
 
-## Template C: Technical Deep-Dive (15 slides)
+## Template C: Technical Deep-Dive (15-20 slides)
 
 1. Title slide
 2. Agenda

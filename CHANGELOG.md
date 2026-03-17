@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [1.0.1] - 2026-03-17
+
+### Added
+- Mining & Metals industry vertical playbook
+- OT/Industrial protocol section in integration matrix
+
+### Fixed
+- Language auto-switch rule clarified (English input = English output)
+- Removed deprecated IoT Core references (replaced with Pub/Sub + GDC Edge)
+- Added SOE procurement note to customer-researcher agent
+- Fixed slide count inconsistency in pitch-designer agent
+- Removed *(generated)* tags from SKILL.md routing table
+
+---
+
 ## [1.0.0] - 2026-03-17
 
 ### Added

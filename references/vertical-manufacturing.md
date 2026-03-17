@@ -39,7 +39,7 @@ Manufacturing is the vertical where OT (Operational Technology) meets IT — and
 
 | Pain Point | Google Product | Why It Wins |
 |-----------|---------------|-------------|
-| Unplanned downtime | Vertex AI (predictive maintenance models), IoT Core / Pub/Sub, BigQuery | Real-time sensor data → anomaly detection before failure |
+| Unplanned downtime | Vertex AI (predictive maintenance models), Pub/Sub + GDC Edge, BigQuery | Real-time sensor data → anomaly detection before failure |
 | Quality defects | Vision AI (visual inspection), Vertex AI | Camera-based quality inspection at line speed; no sampling bias |
 | Supply chain | BigQuery + Supply Chain Twin, Apigee | Real-time inventory and supplier data; what-if simulation |
 | Energy | BigQuery + Looker, Pub/Sub (smart meters) | Energy dashboard by machine, line, product; carbon accounting |
