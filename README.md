@@ -25,7 +25,7 @@ An AI-powered skill that helps Google Cloud sellers prepare for enterprise custo
 ### Claude Code (recommended)
 
 ```bash
-git clone https://github.com/kacperptasinski/gcp-sales-enablement-skill.git ~/.claude/skills/gcp-sales-enablement
+git clone https://github.com/ecas/GCD-Skill.git ~/.claude/skills/gcp-sales-enablement
 ```
 
 The skill is auto-discovered by Claude Code. Invoke it from any session:
