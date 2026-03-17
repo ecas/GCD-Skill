@@ -40,6 +40,30 @@ Rule: Maximum 3 products in a 45-minute demo. For shorter slots (20-30 min), max
 
 ---
 
+## Step 1.5 — Demo Environment Target
+
+Before generating any provisioning scripts, ask the user:
+
+1. **Where should the demo environment be created?**
+   - A dedicated demo Google Workspace account (recommended — e.g., `demo@yourcompany.com`)
+   - The seller's own Workspace account (warn: this mixes demo and real data)
+   - A customer-provided sandbox account
+
+2. **How should it be provisioned?**
+   - **Apps Script** (default) — copy-paste into script.google.com, run manually
+   - **GAM CLI** (advanced) — use GAMADV-XTD3 for bulk operations; see `scripts/gam-provisioner.sh`
+   - **Manual setup guide** — step-by-step instructions for manual creation without scripting
+
+3. **Safety check:** Always generate Apps Script provisioning code with DRY RUN mode enabled by default. Tell the user:
+   > "The provisioning script is set to DRY RUN mode by default. It will log everything it would create without making any changes. Review the log, then set `DRY_RUN=false` in Script Properties to provision for real."
+
+Never auto-provision. Always require explicit user confirmation before creating any resources.
+
+If the user selects their own (non-demo) Workspace account, warn them:
+> "Provisioning into a production account will mix demo content with real emails, files, and calendar events. We strongly recommend using a dedicated demo account. If you proceed, run the cleanup script immediately after the demo."
+
+---
+
 ## Step 2 — Fictional Company & Persona Setup
 
 Create a fictional company that mirrors the real customer's industry and context. This company is used throughout all demo content. It must never use the real customer's name, real employee names, or real financials.

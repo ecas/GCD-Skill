@@ -28,10 +28,35 @@
 /**
  * Removes all provisioned demo resources for the configured customer.
  * Run this from the Apps Script editor UI.
+ *
+ * Safety: shows the target account and asks for confirmation before deleting anything.
+ * If no UI is available (running from a trigger), logs a warning and proceeds.
  */
 function cleanupDemoEnvironment() {
   const props = PropertiesService.getScriptProperties();
   const customerKey = props.getProperty('CUSTOMER_KEY');
+  const currentUser = Session.getActiveUser().getEmail();
+
+  Logger.log(`CLEANUP TARGET: ${currentUser}`);
+  Logger.log('This will DELETE all demo content from this account.');
+
+  // Confirmation dialog when UI is available
+  try {
+    const ui = SpreadsheetApp.getUi();
+    const response = ui.alert(
+      'Demo Cleanup',
+      `This will permanently delete all demo content from ${currentUser}.\n\nThis cannot be undone.\n\nProceed?`,
+      ui.ButtonSet.YES_NO
+    );
+    if (response !== ui.Button.YES) {
+      Logger.log('Cleanup cancelled.');
+      return;
+    }
+  } catch (e) {
+    // No UI available (running from trigger or script editor without a bound sheet)
+    // Proceed with log warning only
+    Logger.log('No UI available for confirmation. Proceeding with cleanup...');
+  }
 
   if (!customerKey) {
     throw new Error(

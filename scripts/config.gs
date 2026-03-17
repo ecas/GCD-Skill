@@ -22,6 +22,12 @@ const CUSTOMER_CONFIGS = {
    * Used for: demo environment development, trainer dry-runs, skill testing.
    */
   novatech: {
+    // Target demo account — REQUIRED for provisioning.
+    // Set to the dedicated demo Workspace account email (e.g., demo@yourcompany.com).
+    // Leave empty to use the account running the script (current user).
+    // WARNING: If this doesn't contain "demo" or "test", validation will warn you.
+    targetAccount: '',
+
     // Identity
     companyName: 'NovaTech Logistics',
     companyNameShort: 'NovaTech',
@@ -248,7 +254,28 @@ function validateConfig(customerKey) {
     errors.push(`language must be "en" or "pl", got: "${config.language}"`);
   }
 
-  return { valid: errors.length === 0, errors };
+  // Target account safety checks — these are warnings, not hard errors
+  const warnings = [];
+  if (!config.targetAccount) {
+    warnings.push(
+      'targetAccount is empty — provisioning will run against the current user\'s account. ' +
+      'Set targetAccount to a dedicated demo account email (e.g., demo@yourcompany.com) to be explicit.'
+    );
+  } else {
+    const lower = config.targetAccount.toLowerCase();
+    if (!lower.includes('demo') && !lower.includes('test')) {
+      warnings.push(
+        `targetAccount "${config.targetAccount}" does not contain "demo" or "test". ` +
+        'Verify this is a demo account and not a production Workspace account.'
+      );
+    }
+  }
+
+  if (warnings.length > 0) {
+    warnings.forEach(w => Logger.log(`[CONFIG WARNING] ${w}`));
+  }
+
+  return { valid: errors.length === 0, errors, warnings };
 }
 
 /**

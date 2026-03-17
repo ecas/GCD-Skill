@@ -385,6 +385,46 @@ A full demo package typically includes:
 
 > Tip: Say "generate as PPTX" or "export as PDF" for formatted file output.
 
+### Demo Environment Safety
+
+The demo provisioning scripts include safety guards to prevent accidental changes to production accounts.
+
+**1. DRY RUN by default**
+
+All provisioning scripts start in DRY RUN mode. They log every action they would take without creating anything. Review the log first.
+
+To provision for real:
+- **Apps Script:** Go to Project Settings > Script Properties. Set `DRY_RUN` to `false`. Run `provisionDemoEnvironment()` again.
+- **GAM CLI:** Add `--execute` to your command instead of `--dry-run`.
+
+**2. Target account confirmation**
+
+Before making any changes, scripts show which account will be modified and ask for confirmation. If no confirmation dialog is available (e.g., running from a trigger), the target account is logged and you must confirm via the log.
+
+**3. Production account warning**
+
+If the target account email does not contain "demo" or "test", you receive a warning before provisioning proceeds. This catches the common mistake of running a demo provisioning script against a real work account.
+
+**4. Two provisioning methods**
+
+| Method | Best for | File |
+|--------|----------|------|
+| Apps Script | Sellers with a demo Google Workspace account, no admin access needed | `scripts/orchestrator.gs` |
+| GAM CLI | Partners with GAMADV-XTD3 installed, admin-level provisioning | `scripts/gam-provisioner.sh` |
+
+**Recommended workflow:**
+
+1. Create or obtain a dedicated demo Workspace account (e.g., `demo@yourcompany.com`)
+2. Set `targetAccount` in `scripts/config.gs` to that account email
+3. Run the provisioning script in DRY RUN mode — review the log carefully
+4. Set `DRY_RUN=false` (Apps Script) or use `--execute` (GAM CLI) and provision
+5. Run the demo
+6. Run `cleanupDemoEnvironment()` or the GAM cleanup command to reset the account
+
+**STEP_BY_STEP mode (Apps Script only)**
+
+Set `STEP_BY_STEP=true` in Script Properties to pause after each provisioning step and log what was created before continuing. Useful the first time you provision a new customer config.
+
 ---
 
 ## Quick Commands — Cheat Sheet

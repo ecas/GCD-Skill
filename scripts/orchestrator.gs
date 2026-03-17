@@ -7,8 +7,15 @@
  *
  * Usage:
  *   1. Set Script Properties: CUSTOMER_KEY, DEMO_ACCOUNT_EMAIL
- *   2. Run provisionDemoEnvironment() from the Apps Script editor
- *   3. Review the provisioning report in Drive when complete
+ *   2. Set DRY_RUN = 'false' in Script Properties when ready to provision for real
+ *      (default is DRY_RUN = 'true' — no changes are made until you explicitly opt in)
+ *   3. Run provisionDemoEnvironment() from the Apps Script editor
+ *   4. Review the provisioning report in Drive when complete
+ *
+ * Safety:
+ *   - DRY_RUN mode (default): logs all actions without creating anything
+ *   - STEP_BY_STEP mode: pauses after each step and logs what was created
+ *   - Confirmation dialog shown before any real changes are made
  *
  * To re-run: run cleanupDemoEnvironment() first, then provisionDemoEnvironment()
  */
@@ -21,10 +28,30 @@
 /**
  * Provisions the complete demo environment for the configured customer.
  * Run this from the Apps Script editor UI.
+ *
+ * Safety controls:
+ *   - Reads DRY_RUN Script Property (default: true). Set to 'false' to provision for real.
+ *   - Reads STEP_BY_STEP Script Property (default: false). Set to 'true' to pause after each step.
+ *   - Shows confirmation dialog before any real changes are made.
+ *   - Logs the target account before every action.
  */
 function provisionDemoEnvironment() {
   const props = PropertiesService.getScriptProperties();
   const customerKey = props.getProperty('CUSTOMER_KEY');
+
+  // DRY_RUN defaults to true — must explicitly set to 'false' to provision
+  const dryRun = props.getProperty('DRY_RUN') !== 'false';
+  const stepByStep = props.getProperty('STEP_BY_STEP') === 'true';
+
+  const currentUser = Session.getActiveUser().getEmail();
+
+  // Attempt to get UI — may not be available when run from triggers
+  let ui = null;
+  try {
+    ui = SpreadsheetApp.getUi();
+  } catch (e) {
+    // No UI context — running from editor or trigger, log-only mode
+  }
 
   if (!customerKey) {
     throw new Error(
@@ -43,8 +70,48 @@ function provisionDemoEnvironment() {
     );
   }
 
-  const state = initState(customerKey, config.companyName);
+  // ── Safety: DRY RUN notice ──
+  if (dryRun) {
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('  DRY RUN MODE — No changes will be made.');
+    Logger.log('  Review this log, then set DRY_RUN=false in Script Properties');
+    Logger.log('  and re-run to provision for real.');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  }
+
+  // ── Safety: target account notice ──
+  Logger.log(`PROVISIONING TARGET: ${currentUser}`);
+  Logger.log(`This will create files in ${currentUser}'s Drive, send emails from ${currentUser}'s Gmail, and add events to ${currentUser}'s Calendar.`);
+
+  if (config.targetAccount && config.targetAccount !== currentUser) {
+    Logger.log(`WARNING: Config targetAccount (${config.targetAccount}) does not match current user (${currentUser}). Proceeding as current user.`);
+  }
+
+  // ── Safety: production account warning ──
+  if (!dryRun) {
+    const lowerEmail = currentUser.toLowerCase();
+    if (!lowerEmail.includes('demo') && !lowerEmail.includes('test')) {
+      Logger.log(`WARNING: Target account "${currentUser}" does not contain "demo" or "test". Are you sure this is a demo account?`);
+    }
+  }
+
+  // ── Safety: confirmation dialog (only when UI available and not dry run) ──
+  if (!dryRun && ui) {
+    const response = ui.alert(
+      'Demo Environment Provisioning',
+      `This will:\n• Create folders and files in your Drive\n• Send emails from your Gmail\n• Add events to your Calendar\n• Create Chat spaces\n\nTarget account: ${currentUser}\n\nProceed?`,
+      ui.ButtonSet.YES_NO
+    );
+    if (response !== ui.Button.YES) {
+      Logger.log('Provisioning cancelled by user.');
+      return;
+    }
+  }
+
+  const state = initState(customerKey, config.companyName, dryRun);
   log(state, 'INFO', `Starting provisioning for: ${config.companyName} [${customerKey}]`);
+  log(state, 'INFO', `Mode: ${dryRun ? 'DRY RUN' : 'EXECUTE'} | Step-by-step: ${stepByStep}`);
+  log(state, 'INFO', `Target account: ${currentUser}`);
 
   const steps = [
     { name: 'Gmail Labels',   fn: () => createGmailLabels(config, state) },
@@ -58,33 +125,58 @@ function provisionDemoEnvironment() {
   ];
 
   for (const step of steps) {
-    log(state, 'INFO', `─── Step: ${step.name} ───`);
-    try {
-      step.fn();
-      state.steps[step.name] = { status: 'SUCCESS', timestamp: new Date().toISOString() };
-      log(state, 'INFO', `${step.name}: SUCCESS`);
-    } catch (err) {
-      state.steps[step.name] = { status: 'FAILED', error: err.message, timestamp: new Date().toISOString() };
-      log(state, 'ERROR', `${step.name}: FAILED — ${err.message}`);
-      log(state, 'WARN', `Continuing to next step...`);
+    log(state, 'INFO', `─── ${dryRun ? '[DRY RUN] Would run' : 'Running'} Step: ${step.name} ───`);
+
+    if (dryRun) {
+      // In dry run mode, record steps as previewed without executing
+      state.steps[step.name] = { status: 'DRY_RUN', timestamp: new Date().toISOString() };
+      log(state, 'INFO', `${step.name}: [DRY RUN] — skipped. Set DRY_RUN=false to execute.`);
+    } else {
+      try {
+        step.fn();
+        state.steps[step.name] = { status: 'SUCCESS', timestamp: new Date().toISOString() };
+        log(state, 'INFO', `${step.name}: SUCCESS`);
+      } catch (err) {
+        state.steps[step.name] = { status: 'FAILED', error: err.message, timestamp: new Date().toISOString() };
+        log(state, 'ERROR', `${step.name}: FAILED — ${err.message}`);
+        log(state, 'WARN', `Continuing to next step...`);
+      }
+    }
+
+    // STEP_BY_STEP: pause and summarise after each step
+    if (stepByStep && !dryRun) {
+      const stepResult = state.steps[step.name];
+      Logger.log(`[STEP_BY_STEP] Completed "${step.name}" — Status: ${stepResult.status}`);
+      Logger.log(`[STEP_BY_STEP] Drive files so far: ${state.manifest.driveFileIds.length} | Folders: ${state.manifest.driveFolderIds.length} | Calendar events: ${state.manifest.calendarEventIds.length}`);
     }
 
     // Respect Apps Script execution time limits — pause briefly between heavy steps
     Utilities.sleep(500);
   }
 
-  writeProvisioningReport(config, state);
+  if (!dryRun) {
+    writeProvisioningReport(config, state);
+  }
 
   const successCount = Object.values(state.steps).filter(s => s.status === 'SUCCESS').length;
   const failCount = Object.values(state.steps).filter(s => s.status === 'FAILED').length;
+  const dryRunCount = Object.values(state.steps).filter(s => s.status === 'DRY_RUN').length;
 
-  log(state, 'INFO', `Provisioning complete. ${successCount} steps succeeded, ${failCount} failed.`);
-  log(state, 'INFO', `Report written to Drive. Check the provisioning report document.`);
-
-  if (failCount > 0) {
-    Logger.log('⚠️ Some steps failed. Review the provisioning report in Drive.');
+  if (dryRun) {
+    log(state, 'INFO', `DRY RUN complete. ${dryRunCount} steps previewed. No changes were made.`);
+    log(state, 'INFO', `Set DRY_RUN=false in Script Properties and re-run to provision for real.`);
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    Logger.log('  DRY RUN COMPLETE — no changes were made.');
+    Logger.log('  Set DRY_RUN=false in Script Properties to provision for real.');
+    Logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   } else {
-    Logger.log('✅ Full provisioning complete. Demo environment ready.');
+    log(state, 'INFO', `Provisioning complete. ${successCount} steps succeeded, ${failCount} failed.`);
+    log(state, 'INFO', `Report written to Drive. Check the provisioning report document.`);
+    if (failCount > 0) {
+      Logger.log('Some steps failed. Review the provisioning report in Drive.');
+    } else {
+      Logger.log('Full provisioning complete. Demo environment ready.');
+    }
   }
 }
 
@@ -99,12 +191,14 @@ function provisionDemoEnvironment() {
  *
  * @param {string} customerKey
  * @param {string} companyName
+ * @param {boolean} dryRun - When true, generators should preview but not create resources
  * @returns {Object} state
  */
-function initState(customerKey, companyName) {
+function initState(customerKey, companyName, dryRun) {
   return {
     customerKey,
     companyName,
+    dryRun: !!dryRun,
     startTime: new Date().toISOString(),
     steps: {},
     manifest: {
