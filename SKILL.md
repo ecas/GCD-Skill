@@ -168,6 +168,49 @@ Company | Industry | Personas | Mode | Language | Confidence Level
 
 Omit sections that are not relevant to the current mode.
 
+> Tip: Say "generate as PPTX" or "export as PDF" for formatted file output.
+
+---
+
+## Output Generation
+
+The skill supports multiple output formats. Detect the user's preference from their request.
+
+### Format Detection
+
+| User says | Output format |
+|-----------|--------------|
+| "generate as PPTX", "create PowerPoint", "make slides" | PPTX file |
+| "generate as PDF", "export PDF", "formatted report" | PDF file |
+| "create Google Slides", "in Google Slides" | Apps Script for Slides API |
+| (no format specified) | Structured markdown (default) |
+
+### PPTX Generation
+
+When PPTX is requested, use `generators/pitch_deck.py`:
+1. Structure the slide content as a JSON config matching the generator's input schema
+2. Run: `python generators/pitch_deck.py --config /tmp/deck_config.json --output /tmp/output.pptx`
+3. Present the file path to the user
+
+### PDF Generation
+
+When PDF is requested, use `generators/pdf_report.py`:
+1. Structure content as a JSON config matching the generator's input schema
+2. Run: `python generators/pdf_report.py --type research|trainer|battlecard --config /tmp/report_config.json --output /tmp/output.pdf`
+3. Present the file path to the user
+
+### Google Slides Generation
+
+When Google Slides is requested:
+1. Generate an Apps Script that uses the Slides API to create the presentation
+2. Output the script for the user to run in their Google Workspace environment
+3. Include setup instructions
+
+### Default (Markdown)
+
+When no format is specified, output structured markdown as before. Mention available formats:
+> "This content is also available as PPTX or PDF. Say 'generate as PPTX' or 'export as PDF' to get a formatted file."
+
 ---
 
 ## Language Handling

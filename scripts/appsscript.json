@@ -19,6 +19,7 @@
     "https://www.googleapis.com/auth/chat.spaces.create",
     "https://www.googleapis.com/auth/chat.memberships",
     "https://www.googleapis.com/auth/script.external_request",
-    "https://www.googleapis.com/auth/script.scriptapp"
+    "https://www.googleapis.com/auth/script.scriptapp",
+    "https://www.googleapis.com/auth/presentations"
   ]
 }
