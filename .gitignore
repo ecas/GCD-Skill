@@ -1,0 +1,17 @@
+# Session state (user-specific, not committed)
+state/
+*.session.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.bak
