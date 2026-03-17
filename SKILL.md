@@ -206,6 +206,36 @@ When Google Slides is requested:
 2. Output the script for the user to run in their Google Workspace environment
 3. Include setup instructions
 
+### Google Workspace Direct Upload
+
+When the user asks to "upload to Workspace", "create in Google Drive", "push to my account", or "provision the demo environment":
+1. Generate the content config as JSON (matching the schema expected by `workspace_uploader.py`)
+2. Write the config to `/tmp/<company>_config.json`
+3. Run: `python generators/workspace_uploader.py provision --config /tmp/<company>_config.json`
+4. First run will open a browser for OAuth2 consent — this only happens once
+5. DRY RUN by default — user must add `--execute` to actually create resources
+
+This creates everything directly in the user's Google Workspace account:
+- Google Slides presentation (native Google Slides, not PPTX)
+- Google Docs (formatted, placed in Drive folder)
+- Google Sheets (with headers, data rows, and formatting)
+- Calendar events (with Meet links; attendees are NOT notified)
+- Gmail drafts (NOT sent — user reviews and sends manually)
+- Drive folder structure (nested, auto-linked to assets)
+
+Format detection triggers:
+| User says | Action |
+|-----------|--------|
+| "upload to Workspace", "push to my Drive" | Full provision (all asset types) |
+| "create Google Slides in my Drive" | `slides` subcommand only |
+| "provision demo environment" | Full provision |
+
+Safety rules enforced by the script:
+- Dry run by default — no API calls without `--execute`
+- Warns and prompts confirmation if the authenticated email does not contain "demo" or "test"
+- Gmail creates drafts only — never sends
+- Calendar events use `sendUpdates='none'` — attendees receive no notification
+
 ### Default (Markdown)
 
 When no format is specified, output structured markdown as before. Mention available formats:

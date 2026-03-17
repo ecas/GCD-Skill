@@ -539,3 +539,108 @@ Check that you are running it from an account with Google Workspace admin rights
 
 **"I need the output faster"**
 Use a Quick Command from the cheat sheet above, or ask for a "quick profile" or "quick intro deck" — these are optimized for speed over depth.
+
+---
+
+## Direct Upload to Google Workspace
+
+Instead of generating files locally, you can push everything directly into a Google Workspace account as native Google apps — Slides, Docs, Sheets, Calendar events, and Gmail drafts.
+
+### What to Say
+
+```
+Research KGHM, build a pitch, and upload everything to my Google Workspace
+Create demo environment for a logistics company and provision it in my demo account
+Build a presentation for Allegro and create it as Google Slides in my Drive
+Push the NovaTech pitch to my Drive
+```
+
+### What Gets Created
+
+Everything lands directly in your Google Drive, ready to open:
+
+| Asset | What you get |
+|-------|-------------|
+| Presentation | Native Google Slides — branded, multi-slide, editable |
+| Documents | Google Docs with headings, body text, and bullet lists |
+| Spreadsheets | Google Sheets with headers, data rows, alternating row colors, auto-resized columns |
+| Calendar | Events with Google Meet links. Attendees are NOT notified |
+| Gmail | Drafts in your Drafts folder — you review and send manually |
+| Drive folders | Nested folder tree with all assets organised inside |
+
+### First-Time Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com) > APIs & Credentials > Create Credentials > OAuth 2.0 Client ID
+2. Download the JSON file and save it as `credentials.json` in the skill directory (`/path/to/gcp-sales-enablement/`)
+3. Install the required libraries:
+   ```
+   pip install -r generators/requirements.txt
+   ```
+4. The first time you provision, your browser will open for OAuth consent. Click Allow.
+5. After that, the token is cached in `token.pickle` — no browser needed for subsequent runs.
+
+### Safety by Default
+
+All provisioning runs in **DRY RUN mode** by default. You see a log of everything that would be created before anything actually happens.
+
+```
+python generators/workspace_uploader.py provision --config /tmp/config.json
+```
+
+Output:
+```
+====================================================
+  GCP Sales Enablement -- Workspace Provisioner
+====================================================
+  Target account : your.name@demo.company.com
+  Company        : NovaTech Logistics
+  Mode           : DRY RUN
+====================================================
+
+Drive Folders
+  [DRY RUN] Would execute: Drive Folders
+
+Google Slides Presentation
+  [DRY RUN] Would execute: Google Slides Presentation
+...
+  DRY RUN complete -- no changes made.
+  Add --execute to provision for real.
+```
+
+To provision for real, add `--execute`:
+
+```
+python generators/workspace_uploader.py provision --config /tmp/config.json --execute
+```
+
+### Production Account Guard
+
+If your authenticated account does not contain "demo" or "test" in the email address, the script pauses and asks for explicit confirmation before creating anything. This catches the common mistake of provisioning against a real work account.
+
+### Cleanup
+
+Every provisioning run saves a manifest file (`*_manifest.json`) listing all created resource IDs. To remove everything:
+
+```
+python generators/workspace_uploader.py cleanup --manifest /tmp/novatech_config_manifest.json
+```
+
+This deletes Drive files, folders, calendar events, and Gmail drafts created during that provisioning run.
+
+### Presentation-Only Mode
+
+To create just a Google Slides presentation from a config:
+
+```
+python generators/workspace_uploader.py slides --config /tmp/slides_config.json
+```
+
+### Generate a Sample Config
+
+To see a complete example config covering all supported asset types:
+
+```
+python generators/workspace_uploader.py
+```
+
+This writes `/tmp/demo_config.json` — a full NovaTech Logistics demo config you can inspect and adapt.
